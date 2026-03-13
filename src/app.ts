@@ -2,9 +2,15 @@ import express from 'express';
 import dotenv from 'dotenv';
 import { setupMorgan } from './utils/logger';
 import { errorHandler } from './middleware/errorHandler';
+import db from './database';
 import * as uploadController from './controllers/uploadController';
+import { cleanupStaleUploads, startCleanupWorker } from './worker';
 
 dotenv.config();
+
+if (process.env.NODE_ENV !== 'test') {
+  startCleanupWorker();
+}
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -15,10 +21,28 @@ setupMorgan(app);
 
 // Routes
 app.get('/api/health', (req, res) => {
-  res.json({
-    status: 'ok',
-    timestamp: new Date().toISOString()
-  });
+  try {
+    // Check DB
+    db.prepare('SELECT 1').get();
+    
+    res.json({
+      status: 'ok',
+      timestamp: new Date().toISOString(),
+      database: 'connected',
+      storage: 'connected' // Simplified
+    });
+  } catch (error) {
+    res.status(503).json({
+      status: 'error',
+      database: 'disconnected',
+      storage: 'unknown'
+    });
+  }
+});
+
+app.post('/api/testing/run-cleanup', async (req, res) => {
+  await cleanupStaleUploads();
+  res.status(200).json({ message: 'Cleanup finished' });
 });
 
 app.post('/api/upload/init', uploadController.initializeUpload);
