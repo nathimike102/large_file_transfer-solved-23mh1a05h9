@@ -6,6 +6,7 @@ import { logger } from '../utils/logger';
 import { ValidationError, NotFoundError } from '../utils/errors';
 import s3Client from '../storage';
 import { PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
+import { Upload } from '@aws-sdk/lib-storage';
 import { getTempChunkKey, getFinalFileKey, UPLOAD_BUCKET, DEFAULT_CHUNK_SIZE } from '../utils/constants';
 import { Readable } from 'stream';
 
@@ -118,21 +119,52 @@ export const completeUpload = async (req: Request, res: Response) => {
 
   logger.info(`Completing upload: ${uploadId}. Assembling ${chunks.length} chunks.`);
 
-  // In a real S3 scenario, we'd use Multipart Upload completion.
-  // Here, we'll simulate assembly by streaming from MinIO "temp" to "uploads".
-  // Note: For simplicity in this demo, we'll just move/copy objects.
-  // Actually, let's just mark it as complete in DB for now to show the flow.
-  // In a real implementation we would stream merge them.
-  
-  db.prepare("UPDATE uploads SET status = 'COMPLETED', completed_at = ? WHERE id = ?")
-    .run(new Date().toISOString(), uploadId);
+  // Assemble chunks by streaming from MinIO temp to final
+  const bucketName = UPLOAD_BUCKET;
+  const finalKey = getFinalFileKey(uploadId);
 
-  res.json({
-    status: 'COMPLETED',
-    fileId: uploadId,
-    fileName: upload.file_name,
-    fileSize: upload.file_size
-  });
+  try {
+    async function* chunkGenerator() {
+      for (const chunk of chunks.sort((a, b) => a.chunk_index - b.chunk_index)) {
+        const chunkKey = getTempChunkKey(uploadId, chunk.chunk_index);
+        const response = await s3Client.send(new GetObjectCommand({
+          Bucket: bucketName,
+          Key: chunkKey,
+        }));
+        const chunkStream = response.Body as Readable;
+        for await (const data of chunkStream) {
+          yield data;
+        }
+      }
+    }
+
+    const stream = Readable.from(chunkGenerator());
+
+    const parallelUpload = new Upload({
+      client: s3Client,
+      params: {
+        Bucket: bucketName,
+        Key: finalKey,
+        Body: stream,
+      },
+    });
+
+    await parallelUpload.done();
+    logger.info(`Successfully assembled file: ${finalKey}`);
+
+    db.prepare("UPDATE uploads SET status = 'COMPLETED', completed_at = ? WHERE id = ?")
+      .run(new Date().toISOString(), uploadId);
+
+    res.json({
+      status: 'COMPLETED',
+      fileId: uploadId,
+      fileName: upload.file_name,
+      fileSize: upload.file_size
+    });
+  } catch (error) {
+    logger.error('Error assembling file:', error);
+    throw error;
+  }
 };
 
 export const downloadFile = async (req: Request, res: Response) => {
