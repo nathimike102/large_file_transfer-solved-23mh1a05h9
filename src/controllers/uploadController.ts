@@ -5,11 +5,9 @@ import db from '../database';
 import { logger } from '../utils/logger';
 import { ValidationError, NotFoundError } from '../utils/errors';
 import s3Client from '../storage';
-import { PutObjectCommand, GetObjectCommand, DeleteObjectsCommand, ListObjectsV2Command } from '@aws-sdk/client-s3';
-import { Upload } from '@aws-sdk/lib-storage';
+import { PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
+import { getTempChunkKey, getFinalFileKey, UPLOAD_BUCKET, DEFAULT_CHUNK_SIZE } from '../utils/constants';
 import { Readable } from 'stream';
-import fs from 'fs';
-import path from 'path';
 
 const initSchema = z.object({
   fileName: z.string().min(1),
@@ -25,7 +23,7 @@ export const initializeUpload = async (req: Request, res: Response) => {
   }
 
   const { fileName, fileSize, chunkSize: providedChunkSize } = result.data;
-  const chunkSize = providedChunkSize || parseInt(process.env.CHUNK_SIZE || '5242880');
+  const chunkSize = providedChunkSize || parseInt(process.env.CHUNK_SIZE || DEFAULT_CHUNK_SIZE.toString());
   const totalChunks = Math.ceil(fileSize / chunkSize);
   const uploadId = uuidv4();
   const createdAt = new Date().toISOString();
@@ -64,8 +62,8 @@ export const uploadChunk = async (req: Request, res: Response) => {
   }
 
   // Upload to MinIO
-  const bucketName = process.env.STORAGE_BUCKET_NAME || 'uploads';
-  const key = `temp/${uploadId}/${index}`;
+  const bucketName = UPLOAD_BUCKET;
+  const key = getTempChunkKey(uploadId, index);
 
   await s3Client.send(new PutObjectCommand({
     Bucket: bucketName,
@@ -148,8 +146,8 @@ export const downloadFile = async (req: Request, res: Response) => {
   logger.info(`Downloading file: ${fileId} (${upload.file_name})`);
 
   // In a real S3 scenario, we'd stream from MinIO
-  const bucketName = process.env.STORAGE_BUCKET_NAME || 'uploads';
-  const key = `final/${fileId}`;
+  const bucketName = UPLOAD_BUCKET;
+  const key = getFinalFileKey(fileId);
 
   try {
     const data = await s3Client.send(new GetObjectCommand({
@@ -180,7 +178,7 @@ export const cancelUpload = async (req: Request, res: Response) => {
   logger.info(`Cancelling upload: ${uploadId}`);
 
   // Delete chunks from MinIO
-  const bucketName = process.env.STORAGE_BUCKET_NAME || 'uploads';
+  const bucketName = UPLOAD_BUCKET;
   const prefix = `temp/${uploadId}/`;
 
   // Note: Simplified cleanup (real implementation would list and delete)
