@@ -32,6 +32,30 @@ cp .env.example .env
 docker-compose up -d
 ```
 
-## API Documentation
+## API Endpoints
 
-The API documentation will be updated as endpoints are implemented.
+### Health
+- `GET /api/health`: Check system status (DB, Storage).
+
+### Uploads
+- `POST /api/upload/init`: Initialize an upload.
+  - Body: `{ "fileName": "string", "fileSize": number, "chunkSize": number (optional) }`
+- `GET /api/upload/:uploadId/status`: Check which chunks are uploaded.
+- `PUT /api/upload/:uploadId/chunk/:chunkIndex`: Upload a binary chunk (`application/octet-stream`).
+- `POST /api/upload/:uploadId/complete`: Finalize the upload and assemble chunks.
+- `DELETE /api/upload/:uploadId`: Cancel an upload and clean up.
+
+### Downloads
+- `GET /api/download/:fileId`: Stream the final file.
+
+### Maintenance
+- `POST /api/testing/run-cleanup`: Manually trigger the stale upload cleanup worker.
+
+## Development & Verification
+
+1.  **Run with Docker**: `docker-compose up --build`
+2.  **Run Locally**: `npm install && npm run dev`
+3.  **Test the Flow**: `npm run test` (uses `src/test-client.ts`)
+
+## Licensing
+MIT
