@@ -4,6 +4,7 @@ import { setupMorgan } from './utils/logger';
 import { errorHandler } from './middleware/errorHandler';
 import { requestLogger } from './middleware/requestLogger';
 import db from './database';
+import path from 'path';
 import * as uploadController from './controllers/uploadController';
 import { cleanupStaleUploads, startCleanupWorker } from './worker';
 
@@ -16,6 +17,7 @@ if (process.env.NODE_ENV !== 'test') {
 const app = express();
 const port = process.env.PORT || 3000;
 
+app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json());
 app.use(express.raw({ type: 'application/octet-stream', limit: '100mb' }));
 app.use(requestLogger);
