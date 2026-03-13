@@ -43,6 +43,11 @@ export const initDb = () => {
     )
   `);
 
+  // Indexes for performance
+  db.exec('CREATE INDEX IF NOT EXISTS idx_uploads_status ON uploads(status)');
+  db.exec('CREATE INDEX IF NOT EXISTS idx_uploads_created_at ON uploads(created_at)');
+  db.exec('CREATE INDEX IF NOT EXISTS idx_chunks_upload_id ON chunks(upload_id)');
+
   logger.info('Database schema initialized successfully.');
 };
 
