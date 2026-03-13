@@ -2,6 +2,7 @@ import express from 'express';
 import dotenv from 'dotenv';
 import { setupMorgan } from './utils/logger';
 import { errorHandler } from './middleware/errorHandler';
+import * as uploadController from './controllers/uploadController';
 
 dotenv.config();
 
@@ -18,6 +19,8 @@ app.get('/api/health', (req, res) => {
     timestamp: new Date().toISOString()
   });
 });
+
+app.post('/api/upload/init', uploadController.initializeUpload);
 
 // Error handling
 app.use(errorHandler);
