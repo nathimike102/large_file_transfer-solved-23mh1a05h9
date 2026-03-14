@@ -5,6 +5,7 @@ services:
     build: .
     ports:
       - "3000:3000"
+    restart: always
     environment:
       - DATABASE_PATH=/app/data/uploads.db
       - STORAGE_ENDPOINT=minio
@@ -20,6 +21,7 @@ services:
 
   minio:
     image: minio/minio
+    restart: always
     ports:
       - "9000:9000"
       - "9001:9001"

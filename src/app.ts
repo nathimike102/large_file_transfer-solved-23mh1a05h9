@@ -1,14 +1,23 @@
 import express from 'express';
 import dotenv from 'dotenv';
+import helmet from 'helmet';
+import cors from 'cors';
+import rateLimit from 'express-rate-limit';
+import path from 'path';
 import { setupMorgan } from './utils/logger';
 import { errorHandler } from './middleware/errorHandler';
 import { requestLogger } from './middleware/requestLogger';
 import db from './database';
-import path from 'path';
 import * as uploadController from './controllers/uploadController';
 import { cleanupStaleUploads, startCleanupWorker } from './worker';
 
 dotenv.config();
+
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // limit each IP to 100 requests per windowMs
+  message: 'Too many requests from this IP, please try again after 15 minutes'
+});
 
 if (process.env.NODE_ENV !== 'test') {
   startCleanupWorker();
@@ -17,6 +26,9 @@ if (process.env.NODE_ENV !== 'test') {
 const app = express();
 const port = process.env.PORT || 3000;
 
+app.use(helmet());
+app.use(cors());
+app.use('/api/', limiter);
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json());
 app.use(express.raw({ type: 'application/octet-stream', limit: '100mb' }));
