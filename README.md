@@ -22,8 +22,8 @@ A high-performance, memory-efficient file transfer service with chunked/resumabl
 
 ```bash
 # Clone the repository
-git clone <repository-url>
-cd p4
+git clone git@github.com:nathimike102/large_file_transfer-solved-23mh1a05h9.git
+cd large_file_transfer-solved-23mh1a05h9
 
 # Create environment file
 cp .env.example .env
@@ -57,5 +57,15 @@ docker-compose up -d
 2.  **Run Locally**: `npm install && npm run dev`
 3.  **Test the Flow**: `npm run test` (uses `src/test-client.ts`)
 
+## Production Deployment
+
+To deploy the service in a production environment:
+
+1.  **Environment Variables**: Ensure `.env` is properly configured with production secrets and endpoints.
+2.  **Docker Compose**: Use `docker-compose up -d --build` to launch the API and MinIO.
+3.  **Reverse Proxy**: It is recommended to use a reverse proxy like Nginx or Caddy to handle SSL and exposure on port 80/443.
+4.  **Data Persistence**: The `data` directory and `minio_data` volume should be backed up regularly.
+
 ## Licensing
 MIT
+
