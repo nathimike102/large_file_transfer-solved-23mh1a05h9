@@ -1,0 +1,36 @@
+services:
+  - type: web
+    name: large-file-transfer-svc
+    env: node
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    disk:
+      name: sqlite-data
+      mountPath: /app/data
+      sizeGB: 1
+    envVars:
+      - key: PORT
+        value: 3000
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_PATH
+        value: /app/data/uploads.db
+      - key: STORAGE_REGION
+        value: us-east-1
+      - key: CHUNK_SIZE
+        value: 5242880
+      - key: MAX_FILE_SIZE
+        value: 1073741824
+      - key: STALE_UPLOAD_THRESHOLD
+        value: 86400000
+      - key: STORAGE_ENDPOINT
+        sync: false
+      - key: STORAGE_ACCESS_KEY
+        sync: false
+      - key: STORAGE_SECRET_KEY
+        sync: false
+      - key: STORAGE_USE_SSL
+        value: "true"
+      - key: STORAGE_BUCKET_NAME
+        value: "uploads"

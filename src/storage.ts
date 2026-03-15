@@ -2,9 +2,14 @@ import { S3Client, CreateBucketCommand, HeadBucketCommand } from '@aws-sdk/clien
 import { logger } from './utils/logger';
 import { UPLOAD_BUCKET } from './utils/constants';
 
+const useSSL = process.env.STORAGE_USE_SSL === 'true';
+const endpoint = process.env.STORAGE_ENDPOINT?.startsWith('http') 
+  ? process.env.STORAGE_ENDPOINT 
+  : `http${useSSL ? 's' : ''}://${process.env.STORAGE_ENDPOINT}:${process.env.STORAGE_PORT}`;
+
 const s3Client = new S3Client({
-  endpoint: `http://${process.env.STORAGE_ENDPOINT}:${process.env.STORAGE_PORT}`,
-  region: 'us-east-1',
+  endpoint,
+  region: process.env.STORAGE_REGION || 'us-east-1',
   credentials: {
     accessKeyId: process.env.STORAGE_ACCESS_KEY || 'minioadmin',
     secretAccessKey: process.env.STORAGE_SECRET_KEY || 'minioadmin',
