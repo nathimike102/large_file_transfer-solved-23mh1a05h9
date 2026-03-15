@@ -14,14 +14,16 @@ if (process.env.STORAGE_ENDPOINT) {
   }
 }
 
+const isR2 = process.env.STORAGE_ENDPOINT?.includes('r2.cloudflarestorage.com');
+
 const s3Client = new S3Client({
   endpoint,
-  region: process.env.STORAGE_REGION || 'us-east-1',
+  region: isR2 ? 'auto' : (process.env.STORAGE_REGION || 'us-east-1'),
   credentials: {
     accessKeyId: process.env.STORAGE_ACCESS_KEY || 'minioadmin',
     secretAccessKey: process.env.STORAGE_SECRET_KEY || 'minioadmin',
   },
-  forcePathStyle: true,
+  forcePathStyle: !isR2, // R2 doesn't always need forcePathStyle, MinIO does
 });
 
 export const initStorage = async () => {
