@@ -2,10 +2,17 @@ import { S3Client, CreateBucketCommand, HeadBucketCommand } from '@aws-sdk/clien
 import { logger } from './utils/logger';
 import { UPLOAD_BUCKET } from './utils/constants';
 
-const useSSL = process.env.STORAGE_USE_SSL === 'true';
-const endpoint = process.env.STORAGE_ENDPOINT?.startsWith('http') 
-  ? process.env.STORAGE_ENDPOINT 
-  : `http${useSSL ? 's' : ''}://${process.env.STORAGE_ENDPOINT}:${process.env.STORAGE_PORT}`;
+let endpoint: string | undefined = undefined;
+
+if (process.env.STORAGE_ENDPOINT) {
+  if (process.env.STORAGE_ENDPOINT.startsWith('http')) {
+    endpoint = process.env.STORAGE_ENDPOINT;
+  } else {
+    const useSSL = process.env.STORAGE_USE_SSL === 'true';
+    const port = process.env.STORAGE_PORT ? `:${process.env.STORAGE_PORT}` : '';
+    endpoint = `http${useSSL ? 's' : ''}://${process.env.STORAGE_ENDPOINT}${port}`;
+  }
+}
 
 const s3Client = new S3Client({
   endpoint,
