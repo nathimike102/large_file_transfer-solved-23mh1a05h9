@@ -23,12 +23,16 @@ const s3Client = new S3Client({
     accessKeyId: process.env.STORAGE_ACCESS_KEY || 'minioadmin',
     secretAccessKey: process.env.STORAGE_SECRET_KEY || 'minioadmin',
   },
-  forcePathStyle: !isR2, // R2 doesn't always need forcePathStyle, MinIO does
+  forcePathStyle: isR2 ? false : true,
 });
-
 export const initStorage = async () => {
-  logger.info(`Initializing storage (MinIO)... Bucket: ${UPLOAD_BUCKET}`);
+  logger.info(`Initializing storage... Bucket: ${UPLOAD_BUCKET}`);
   
+  if (isR2) {
+    logger.info(`R2 detected. Skipping bucket auto-creation as R2 buckets should be created via dashboard.`);
+    return;
+  }
+
   try {
     await s3Client.send(new HeadBucketCommand({ Bucket: UPLOAD_BUCKET }));
     logger.info(`Bucket '${UPLOAD_BUCKET}' already exists.`);
