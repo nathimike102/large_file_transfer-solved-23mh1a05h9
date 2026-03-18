@@ -33,4 +33,4 @@ services:
       - key: STORAGE_USE_SSL
         value: "true"
       - key: STORAGE_BUCKET_NAME
-        value: "uploads"
+        value: "gpp-large-file-transfer"
