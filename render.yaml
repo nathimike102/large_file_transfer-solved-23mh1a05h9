@@ -5,17 +5,15 @@ services:
     plan: free
     buildCommand: npm install && npm run build
     startCommand: npm start
-    disk:
-      name: sqlite-data
-      mountPath: /app/data
-      sizeGB: 1
     envVars:
       - key: PORT
         value: 3000
       - key: NODE_ENV
         value: production
+      - key: NODE_VERSION
+        value: "20.11.1"
       - key: DATABASE_PATH
-        value: /app/data/uploads.db
+        value: ./uploads.db
       - key: STORAGE_REGION
         value: us-east-1
       - key: CHUNK_SIZE
