@@ -29,7 +29,7 @@ const port = process.env.PORT || 3000;
 app.use(helmet());
 app.use(cors());
 app.use('/api/', limiter);
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(process.cwd(), 'src/public')));
 app.use(express.json());
 app.use(express.raw({ type: 'application/octet-stream', limit: '100mb' }));
 app.use(requestLogger);
