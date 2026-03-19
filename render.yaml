@@ -15,7 +15,7 @@ services:
       - key: DATABASE_PATH
         value: ./uploads.db
       - key: STORAGE_REGION
-        value: us-east-1
+        sync: false
       - key: CHUNK_SIZE
         value: 5242880
       - key: MAX_FILE_SIZE

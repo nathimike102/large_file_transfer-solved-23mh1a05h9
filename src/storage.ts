@@ -41,6 +41,10 @@ export const initStorage = async () => {
       logger.info(`Bucket '${UPLOAD_BUCKET}' not found. Creating...`);
       await s3Client.send(new CreateBucketCommand({ Bucket: UPLOAD_BUCKET }));
       logger.info(`Bucket '${UPLOAD_BUCKET}' created successfully.`);
+    } else if (error.$metadata?.httpStatusCode === 301) {
+      logger.error(`Bucket '${UPLOAD_BUCKET}' returned a 301 Moved Permanently.`);
+      logger.error(`This usually means the STORAGE_REGION (${process.env.STORAGE_REGION || 'us-east-1'}) does not match the actual region of your bucket.`);
+      throw new Error(`S3 Region Mismatch (301): Check your STORAGE_REGION environment variable in the Render dashboard.`);
     } else {
       logger.error('Error checking/creating bucket:', error);
       throw error;
