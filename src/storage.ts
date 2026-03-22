@@ -39,12 +39,14 @@ export const initStorage = async () => {
   } catch (error: any) {
     if (error.name === 'NotFound' || error.$metadata?.httpStatusCode === 404) {
       logger.info(`Bucket '${UPLOAD_BUCKET}' not found. Creating...`);
-      await s3Client.send(new CreateBucketCommand({ Bucket: UPLOAD_BUCKET }));
-      logger.info(`Bucket '${UPLOAD_BUCKET}' created successfully.`);
+      try {
+        await s3Client.send(new CreateBucketCommand({ Bucket: UPLOAD_BUCKET }));
+        logger.info(`Bucket '${UPLOAD_BUCKET}' created successfully.`);
+      } catch (createError: any) {
+        logger.warn(`Failed to create bucket '${UPLOAD_BUCKET}'. It may already exist or you may lack permissions.`, createError);
+      }
     } else if (error.$metadata?.httpStatusCode === 301) {
-      logger.error(`Bucket '${UPLOAD_BUCKET}' returned a 301 Moved Permanently.`);
-      logger.error(`This usually means the STORAGE_REGION (${process.env.STORAGE_REGION || 'us-east-1'}) does not match the actual region of your bucket.`);
-      throw new Error(`S3 Region Mismatch (301): Check your STORAGE_REGION environment variable in the Render dashboard.`);
+      logger.warn(`Bucket '${UPLOAD_BUCKET}' returned a 301 (Moved Permanently). This is common with MinIO. Continuing...`);
     } else {
       logger.error('Error checking/creating bucket:', error);
       throw error;

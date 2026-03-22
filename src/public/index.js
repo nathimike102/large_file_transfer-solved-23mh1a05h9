@@ -47,6 +47,12 @@ async function handleFileUpload(file) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ fileName: file.name, fileSize: file.size })
     });
+    
+    if (!initRes.ok) {
+      const errData = await initRes.json().catch(() => ({ message: initRes.statusText }));
+      throw new Error(`Init failed: ${initRes.status} - ${errData.message || 'Unknown error'}`);
+    }
+    
     const { uploadId } = await initRes.json();
     
     const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
@@ -58,11 +64,16 @@ async function handleFileUpload(file) {
       const end = Math.min(start + CHUNK_SIZE, file.size);
       const chunk = file.slice(start, end);
 
-      await fetch(`${API_BASE}/upload/${uploadId}/chunk/${i}`, {
+      const chunkRes = await fetch(`${API_BASE}/upload/${uploadId}/chunk/${i}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/octet-stream' },
         body: chunk
       });
+      
+      if (!chunkRes.ok) {
+        const errData = await chunkRes.json().catch(() => ({ message: chunkRes.statusText }));
+        throw new Error(`Chunk ${i} upload failed: ${chunkRes.status} - ${errData.message || 'Unknown error'}`);
+      }
 
       const progress = Math.round(((i + 1) / totalChunks) * 100);
       progressFill.style.width = `${progress}%`;
@@ -74,13 +85,19 @@ async function handleFileUpload(file) {
     const completeRes = await fetch(`${API_BASE}/upload/${uploadId}/complete`, {
       method: 'POST'
     });
+    
+    if (!completeRes.ok) {
+      const errData = await completeRes.json().catch(() => ({ message: completeRes.statusText }));
+      throw new Error(`Complete failed: ${completeRes.status} - ${errData.message || 'Unknown error'}`);
+    }
+    
     const result = await completeRes.json();
     
     addFileToList(result);
     chunkInfo.textContent = 'Upload complete!';
   } catch (error) {
     console.error('Upload failed:', error);
-    chunkInfo.textContent = 'Upload failed. See console for details.';
+    chunkInfo.textContent = `Upload failed: ${error.message}`;
     chunkInfo.style.color = '#ef4444';
   }
 }
